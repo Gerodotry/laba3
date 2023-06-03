@@ -1,85 +1,91 @@
-import sympy as sp
 import time
+import sympy as sp
+import matplotlib.pyplot as plt
 from multiprocessing.pool import ThreadPool
 import scipy.integrate as spi
 
+x = sp.Symbol('x')
+f = sp.sin(x) + sp.exp(x)  # Функція, для якої обчислюємо невизначений інтеграл
 
-# Послідовна версія обчислення невизначеного інтегралу
 def compute_integral_sequential(x_values):
-    start_time = time.time()
-
-    integrals = []
+    results = []
     for x_value in x_values:
         integral = sp.integrate(f, x).subs(x, x_value)
-        integrals.append(integral)
+        results.append(integral)
+    return results
 
-    end_time = time.time()
-    execution_time = end_time - start_time
+def compute_integral_parallel(x_value):
+    integral = sp.integrate(f, x).subs(x, x_value)
+    return integral
 
-    print("Послідовна версія: ", integrals)
-    print("Час виконання: ", execution_time)
+def compute_integral_definite(a, b):
+    result, error = spi.quad(lambda x: sp.sin(x) + sp.exp(x), a, b)
+    return result
 
+x_values = [1, 2, 3, 4, 5]  # Значення x, для яких обчислюємо невизначений інтеграл
+intervals = [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5)]  # Інтервали для обчислення визначеного інтегралу
 
-# Паралельна версія обчислення невизначеного інтегралу
-def compute_integral_parallel(x_values):
+# Виміряємо час виконання для послідовної версії невизначеного інтегралу
+start_time = time.time()
+results_sequential = compute_integral_sequential(x_values)
+end_time = time.time()
+execution_time_sequential = end_time - start_time
+
+print("Невизначені інтеграли (послідовна версія): ", results_sequential)
+print("Час виконання (послідовна версія): ", execution_time_sequential, "секунд")
+
+# Виміряємо час виконання для паралельної версії невизначеного інтегралу
+pool = ThreadPool()
+start_time = time.time()
+results_parallel = pool.map(compute_integral_parallel, x_values)
+end_time = time.time()
+execution_time_parallel = end_time - start_time
+
+print("Невизначені інтеграли (паралельна версія): ", results_parallel)
+print("Час виконання (паралельна версія): ", execution_time_parallel, "секунд")
+
+# Виміряємо час виконання для послідовної версії визначеного інтегралу
+start_time = time.time()
+results_sequential_definite = [compute_integral_definite(a, b) for a, b in intervals]
+end_time = time.time()
+execution_time_sequential_definite = end_time - start_time
+
+print("Визначені інтеграли (послідовна версія): ", results_sequential_definite)
+print("Час виконання (послідовна версія): ", execution_time_sequential_definite, "секунд")
+
+# Виміряємо час виконання для паралельної версії визначеного інтегралу
+pool = ThreadPool()
+start_time = time.time()
+results_parallel_definite = pool.starmap(compute_integral_definite, intervals)
+end_time = time.time()
+execution_time_parallel_definite = end_time - start_time
+
+print("Визначені інтеграли (паралельна версія): ", results_parallel_definite)
+print("Час виконання (паралельна версія): ", execution_time_parallel_definite, "секунд")
+# Виміряємо час виконання для послідовної версії невизначеного інтегралу
+sequential_execution_times = []
+for _ in range(10):
     start_time = time.time()
+    results_sequential = compute_integral_sequential(x_values)
+    end_time = time.time()
+    execution_time_sequential = end_time - start_time
+    sequential_execution_times.append(execution_time_sequential)
 
-    def compute_integral(x_value):
-        integral = sp.integrate(f, x).subs(x, x_value)
-        return integral
-
+# Виміряємо час виконання для паралельної версії невизначеного інтегралу
+parallel_execution_times = []
+for _ in range(10):
     pool = ThreadPool()
-    integrals = pool.map(compute_integral, x_values)
-
-    end_time = time.time()
-    execution_time = end_time - start_time
-
-    print("Паралельна версія: ", integrals)
-    print("Час виконання: ", execution_time)
-
-
-# Послідовна версія обчислення визначеного інтегралу
-def compute_integral_definite_sequential(intervals):
     start_time = time.time()
-
-    integrals = []
-    for a, b in intervals:
-        result, error = spi.quad(f, a, b)
-        integrals.append(result)
-
+    results_parallel = pool.map(compute_integral_parallel, x_values)
     end_time = time.time()
-    execution_time = end_time - start_time
+    execution_time_parallel = end_time - start_time
+    parallel_execution_times.append(execution_time_parallel)
 
-    print("Послідовна версія: ", integrals)
-    print("Час виконання: ", execution_time)
-
-
-# Паралельна версія обчислення визначеного інтегралу
-def compute_integral_definite_parallel(intervals):
-    start_time = time.time()
-
-    def compute_integral(a, b):
-        result, error = spi.quad(f, a, b)
-        return result
-
-    pool = ThreadPool()
-    integrals = pool.starmap(compute_integral, intervals)
-
-    end_time = time.time()
-    execution_time = end_time - start_time
-
-    print("Паралельна версія: ", integrals)
-    print("Час виконання: ", execution_time)
-
-
-# Вхідні дані
-x_values = [1, 2, 3, 4, 5]
-intervals = [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5)]
-
-# Обчислення невизначеного інтегралу
-compute_integral_sequential(x_values)
-compute_integral_parallel(x_values)
-
-# Обчислення визначеного інтегралу
-compute_integral_definite_sequential(intervals)
-compute_integral_definite_parallel(intervals)
+    #grafic
+plt.plot(range(1, 11), sequential_execution_times, label='Sequential')
+plt.plot(range(1, 11), parallel_execution_times, label='Parallel')
+plt.xlabel('Iteration')
+plt.ylabel('Execution Time (seconds)')
+plt.title('Execution Time Comparison')
+plt.legend()
+plt.show()
